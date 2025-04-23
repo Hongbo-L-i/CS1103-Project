@@ -1,0 +1,56 @@
+PRAGMA foreign_keys = ON;
+
+DROP TABLE IF EXISTS Loans_Status;
+DROP TABLE IF EXISTS Loans_History;
+DROP TABLE IF EXISTS Book_Category;
+DROP TABLE IF EXISTS Categories;
+DROP TABLE IF EXISTS Books;
+DROP TABLE IF EXISTS Users;
+
+CREATE TABLE Users 
+(
+    user_id     INTEGER PRIMARY KEY,
+    name        VARCHAR(100),
+    role        VARCHAR(20) CHECK (role IN ('Student', 'Professor', 'Administrator'))
+);
+
+CREATE TABLE Books 
+(
+    book_id     INTEGER PRIMARY KEY,
+    title       VARCHAR(255),
+    author      VARCHAR(100)
+);
+
+CREATE TABLE Categories 
+(
+    category_id     INTEGER PRIMARY KEY,
+    category_name   VARCHAR(100)
+);
+
+CREATE TABLE Book_Category 
+(
+    book_id         INTEGER,
+    category_id     INTEGER,
+    PRIMARY KEY (book_id, category_id),
+    FOREIGN KEY (book_id) REFERENCES Books(book_id) ON DELETE CASCADE,
+    FOREIGN KEY (category_id) REFERENCES Categories(category_id) ON DELETE CASCADE
+);
+
+CREATE TABLE Loans_History 
+(
+    loan_id         INTEGER PRIMARY KEY,
+    book_id         INTEGER,
+    user_id         INTEGER,
+    loan_date       DATE,
+    due_date        DATE,
+    return_date     DATE,
+    FOREIGN KEY (book_id) REFERENCES Books(book_id) ON DELETE CASCADE,
+    FOREIGN KEY (user_id) REFERENCES Users(user_id) ON DELETE SET NULL
+);
+
+CREATE TABLE Loans_Status 
+(
+    book_id         INTEGER PRIMARY KEY,
+    loan_status     VARCHAR(10) CHECK (loan_status IN ('Available', 'Loaned')),
+    FOREIGN KEY (book_id) REFERENCES Books(book_id) ON DELETE CASCADE
+);

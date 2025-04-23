@@ -22,14 +22,37 @@ public class MainFXApp extends Application {
         TextField searchField = new TextField();
         searchField.setPromptText("Please enter Key Words");
 
-        Button searchButton = new Button("Search");
+        Button searchButton = new Button("Book Search by title");
         searchButton.setOnAction(e -> {
             String keyword = searchField.getText();
             methodHouse.searchBooksByKeyword(keyword);
         });
+        
+        TextField searchField2 = new TextField();
+        searchField2.setPromptText("Please enter UserID");
+        
+        Button userSearchButton = new Button("User Loan History Search");
+        userSearchButton.setOnAction(e -> {
+            try {
+                int userId = Integer.parseInt(searchField2.getText());
+                methodHouse.getUserLoanHistory(userId);
+            } catch (NumberFormatException ex) {
+                System.out.println("❌ Please enter valid User ID！");
+            }
+        });
+        
+        TextField searchField3 = new TextField();
+        searchField3.setPromptText("Please enter Catergory Key Words");
+        
+        Button catergorySearchButton = new Button("Book Search by Catergory");
+        catergorySearchButton.setOnAction(e -> {
+            String category = searchField3.getText();
+            methodHouse.listBooksByCategory(category);
+        });
 
-        VBox root = new VBox(10, searchField, searchButton);
-        root.setPrefSize(400, 200);
+
+        VBox root = new VBox(10, searchField, searchButton,searchField2, userSearchButton,searchField3, catergorySearchButton);
+        root.setPrefSize(400, 300);
 
         primaryStage.setScene(new Scene(root));
         primaryStage.setTitle("Book Search");

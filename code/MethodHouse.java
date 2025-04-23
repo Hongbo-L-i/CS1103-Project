@@ -45,6 +45,66 @@ public class MethodHouse {
             e.printStackTrace();
         }
     }
+    
+    public void getUserLoanHistory(int userId) {
+        String sql = """
+            SELECT Books.title, Loans_History.loan_date, Loans_History.return_date
+            FROM Loans_History
+            JOIN Books ON Loans_History.book_id = Books.book_id
+            WHERE Loans_History.user_id = ?
+        """;
+    
+        try (PreparedStatement pstmt = conn.prepareStatement(sql)) {
+            pstmt.setInt(1, userId);
+            ResultSet rs = pstmt.executeQuery();
+    
+            System.out.println("\n[Loan History] User ID: " + userId);
+            while (rs.next()) {
+                String title = rs.getString("title");
+                String loanDate = rs.getString("loan_date");
+                String returnDate = rs.getString("return_date");
+    
+                String display = "- " + title + " loanDate: " + loanDate;
+                display += (returnDate != null) ? "，returnDate: " + returnDate : "，Unreturned";
+                System.out.println(display);
+            }
+    
+        } catch (SQLException e) {
+            System.out.println("Fail to find record " + e.getMessage());
+        }
+    }
+    
+    public void listBooksByCategory(String category) {
+        String sql = """
+        
+            SELECT Books.title, Categories.category_name
+            FROM Books
+            JOIN Book_Category ON Books.book_id = Book_Category.book_id
+            JOIN Categories ON Book_Category.category_id = Categories.category_id
+            WHERE LOWER (category_name) LIKE ?
 
+        """;
+    
+        try (PreparedStatement pstmt = conn.prepareStatement(sql)) {
+            pstmt.setString(1, "%" + category.toLowerCase() + "%");
+            ResultSet rs = pstmt.executeQuery();
+    
+            System.out.println("\n Search Result: " );
+            while (rs.next()) {
+                String title = rs.getString("title");
+                String category_name = rs.getString("category_name");
+                
+    
+                String display = "- " + title + " (category_name: " + category_name +" )";
+                
+                System.out.println(display);
+            }
+    
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+    }
+
+    
     // TODO: 添加其他方法，例如：getUserLoanHistory(int userId)、showAvailableBooks() 等
 }

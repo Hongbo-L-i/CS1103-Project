@@ -3,12 +3,12 @@ import java.sql.*;
 public class MethodHouse {
     private Connection conn;
 
-    // 构造器：连接数据库
+    // Connect Data Base
     public MethodHouse(String dbPath) throws SQLException {
         conn = DriverManager.getConnection("jdbc:sqlite:" + dbPath);
     }
 
-    // 关闭连接
+    // Close
     public void close() {
         try {
             if (conn != null && !conn.isClosed()) {
@@ -20,7 +20,7 @@ public class MethodHouse {
         }
     }
 
-    // 示例功能：根据关键字模糊搜索书名和借阅状态
+    // Search Book by keyword(title)
     public void searchBooksByKeyword(String keyword) {
         String sql = """
             SELECT Books.title, Loans_Status.loan_status
@@ -104,7 +104,270 @@ public class MethodHouse {
             e.printStackTrace();
         }
     }
+    
+    
+    public void addNewBook(int bookId, String title, String author, int categoryId) {
+        String insertBookSQL = "INSERT INTO Books (book_id, title, author) VALUES (?, ?, ?)";
+        String insertCategorySQL = "INSERT INTO Book_Category (book_id, category_id) VALUES (?, ?)";
+    
+        try {
+            // we want to commit if both insert success, so turn off AutoCommit
+            conn.setAutoCommit(false); 
+    
+            // Step 1: Insert Book
+            PreparedStatement pstmt1 = conn.prepareStatement(insertBookSQL);
+            pstmt1.setInt(1, bookId);
+            pstmt1.setString(2, title);
+            pstmt1.setString(3, author);
+            pstmt1.executeUpdate();
+    
+            // Step 2: Insert Book_category Relation
+            PreparedStatement pstmt2 = conn.prepareStatement(insertCategorySQL);
+            pstmt2.setInt(1, bookId);
+            pstmt2.setInt(2, categoryId);
+            pstmt2.executeUpdate();
+            
+            //call insertLoanStatus to set book loan status to avaliable
+            insertLoanStatus(bookId);
+            
+            conn.commit(); // commit it if add sussecfully
+            System.out.println("Book add. New Book ID: " + bookId);
+    
+        }
+        catch (SQLException e) 
+        {
+            if (e.getMessage().contains("PRIMARY KEY")) {
+                System.out.println("❌ Book ID exist,please try another ID.");
+            } else {
+                System.out.println("❌ fail to insert：" + e.getMessage());
+            }
+        
+            try {
+                conn.rollback(); // rollback when exception happened
+            } catch (SQLException ex) {
+                ex.printStackTrace();
+            }
+
+        }
+        finally {
+            try {
+                conn.setAutoCommit(true); // turn on AutoCommit back
+            } catch (SQLException e) {
+                e.printStackTrace();
+            }
+        }
+    }
+
+    public int searchMaxId(String idColumnName, String tableName) {
+        String sql = "SELECT MAX(" + idColumnName + ") FROM " + tableName;
+        int result = -1; // if return -1, something wrong
+    
+        try (PreparedStatement stmt = conn.prepareStatement(sql)) {
+            ResultSet rs = stmt.executeQuery();
+            if (rs.next()) {
+                result = rs.getInt(1);
+            }
+        } catch (SQLException e) {
+            System.out.println("❌ fail to find max id：" + e.getMessage());
+        }
+    
+        return result;
+    }
 
     
-    // TODO: 添加其他方法，例如：getUserLoanHistory(int userId)、showAvailableBooks() 等
+    public int searchMaxBookID() {
+        return searchMaxId("book_id", "Books");
+    }
+    
+    public int searchMaxUserID() {
+        return searchMaxId("user_id", "Users");
+    }
+    
+    public int searchMaxLoanID() {
+        return searchMaxId("loan_id", "Loans_History");
+    }
+
+    
+    public void printWholeTable(String tableName) {
+        String sql = "SELECT * FROM " + tableName;
+        
+        try (Statement stmt = conn.createStatement();
+             ResultSet rs = stmt.executeQuery(sql)) {
+    
+            System.out.println("\n--- Table: " + tableName + " ---");
+    
+            //Get Table information
+            ResultSetMetaData meta = rs.getMetaData();
+            int columnCount = meta.getColumnCount();
+    
+            // print the table titles
+            for (int i = 1; i <= columnCount; i++) {
+                System.out.print(meta.getColumnName(i) + "\t");
+            }
+            System.out.println("\n" + "-".repeat(40));
+    
+            // print content
+            boolean hasRow = false;
+            while (rs.next()) {
+                hasRow = true;
+                for (int i = 1; i <= columnCount; i++) {
+                    System.out.print(rs.getString(i) + "\t");
+                }
+                System.out.println();
+            }
+    
+            if (!hasRow) {
+                System.out.println("No data in Table");
+            }
+    
+        } catch (SQLException e) {
+            System.out.println("Fail to read the table：" + e.getMessage());
+        }
+    }
+    
+    public void addNewCategory(int categoryId, String categoryName) {
+        String insertCategoryIDSQL = "INSERT INTO Categories (category_id,category_name) VALUES (?, ?)";
+    
+        try {
+            // we want to commit if all insert success, so turn off AutoCommit
+            conn.setAutoCommit(false); 
+    
+            // Insert New Category to Category Table
+            PreparedStatement pstmt1 = conn.prepareStatement(insertCategoryIDSQL);
+            pstmt1.setInt(1, categoryId);
+            pstmt1.setString(2, categoryName);
+            pstmt1.executeUpdate();
+    
+
+            conn.commit(); // commit it if add sussecfully
+            System.out.println("New Category add. New category ID & name: " + categoryId+" "+ categoryName);
+    
+        }
+        catch (SQLException e) 
+        {
+            if (e.getMessage().contains("PRIMARY KEY")) {
+                System.out.println("❌ Category ID exist,please try another ID.");
+            } else {
+                System.out.println("❌ fail to insert：" + e.getMessage());
+            }
+        
+            try {
+                conn.rollback(); // rollback when exception happened
+            } catch (SQLException ex) {
+                ex.printStackTrace();
+            }
+
+        }
+        finally {
+            try {
+                conn.setAutoCommit(true); // Restore auto-commit mode
+            } catch (SQLException e) {
+                e.printStackTrace();
+            }
+        }
+    }
+    
+    public void addNewUser(int userId, String userName, String role) {
+        String insertCategoryIDSQL = "INSERT INTO Users (user_id, name, role) VALUES (?, ?, ?)";
+    
+        try {
+            // we want to commit if all insert success, so turn off AutoCommit
+            conn.setAutoCommit(false); 
+    
+            // Insert New Category to Category Table
+            PreparedStatement pstmt1 = conn.prepareStatement(insertCategoryIDSQL);
+            pstmt1.setInt(1, userId);
+            pstmt1.setString(2, userName);
+            pstmt1.setString(3, role);
+            pstmt1.executeUpdate();
+    
+
+            conn.commit(); // commit it if add sussecfully
+            System.out.println("New User add. New User ID & name & role: " + userId+" "+ userName + " "+ role);
+    
+        }
+        catch (SQLException e) 
+        {
+            if (e.getMessage().contains("PRIMARY KEY")) {
+                System.out.println("❌ User ID exist,please try another ID.");
+            } else {
+                System.out.println("❌ fail to insert：" + e.getMessage());
+            }
+        
+            try {
+                conn.rollback(); // rollback when exception happened
+            } catch (SQLException ex) {
+                ex.printStackTrace();
+            }
+
+        }
+        finally {
+            try {
+                conn.setAutoCommit(true); // Restore auto-commit mode
+            } catch (SQLException e) {
+                e.printStackTrace();
+            }
+        }
+    }
+    
+    public void addNewLoan(int loanId, int bookId, int userId, String loanDate, String dueDate) {
+        String insertLoanHistory = "INSERT INTO Loans_History (loan_id, book_id, user_id, loan_date, due_date, return_date) VALUES (?, ?, ?, ?, ?, null)";
+        String updateLoanStatus = "UPDATE Loans_Status SET loan_status = 'Loaned' WHERE book_id = ?";
+    
+        try {
+            conn.setAutoCommit(false); 
+    
+            // Step 1: insert Loan History
+            PreparedStatement pstmt1 = conn.prepareStatement(insertLoanHistory);
+            pstmt1.setInt(1, loanId);
+            pstmt1.setInt(2, bookId);
+            pstmt1.setInt(3, userId);
+            pstmt1.setString(4, loanDate);
+            pstmt1.setString(5, dueDate);
+            pstmt1.executeUpdate();
+    
+            // Step 2: update book status to Loaned
+            PreparedStatement pstmt2 = conn.prepareStatement(updateLoanStatus);
+            pstmt2.setInt(1, bookId);
+            pstmt2.executeUpdate();
+    
+            conn.commit();
+            System.out.println("✅ successfully add Loan history and update Book status");
+    
+            pstmt1.close();
+            pstmt2.close();
+        } catch (SQLException e) {
+            System.out.println("❌fail to insert or update：" + e.getMessage());
+            try {
+                conn.rollback();
+            } catch (SQLException ex) {
+                ex.printStackTrace();
+            }
+        } finally {
+            try {
+                conn.setAutoCommit(true);
+            } catch (SQLException e) {
+                e.printStackTrace();
+            }
+        }
+    }
+
+    public void insertLoanStatus(int bookId) {
+        String sql = "INSERT INTO Loans_Status (book_id, loan_status) VALUES (?, 'Available')";
+    
+        try (PreparedStatement pstmt = conn.prepareStatement(sql)) {
+            pstmt.setInt(1, bookId);
+            pstmt.executeUpdate();
+            System.out.println("✅ Book ID " + bookId + " Add Book Status：Available");
+        } catch (SQLException e) {
+            if (e.getMessage().contains("UNIQUE") || e.getMessage().contains("PRIMARY KEY")) {
+                System.out.println(" Status record exist. ");
+            } else {
+                System.out.println("❌ fail to insert Loan_Status ：" + e.getMessage());
+            }
+        }
+    }
+
+    
+    
 }

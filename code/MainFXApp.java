@@ -12,7 +12,7 @@ public class MainFXApp extends Application {
     @Override
     public void start(Stage primaryStage) {
         try {
-            // 初始化 MethodHouse 并连接数据库
+            
             methodHouse = new MethodHouse("library_project_v2_fixed.db");
         } catch (Exception e) {
             e.printStackTrace();
